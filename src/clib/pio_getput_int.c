@@ -611,7 +611,6 @@ int PIOc_get_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
     {
         if (!stride_present)
         {
-            LOG((2, "stride not present "));
             if (!(fake_stride = malloc(ndims * sizeof(PIO_Offset))))
                 return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
             for (int d = 0; d < ndims; d++)
@@ -671,14 +670,6 @@ int PIOc_get_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
                 return pio_err(ios, file, ierr, __FILE__, __LINE__);
         }
 #endif /* _PNETCDF */
-
-        LOG((2, "duck ndims %d", ndims));
-        for (int d = 0; d < ndims; d++)
-        {
-            LOG((2, "start[%d]  %d", d, start[d]));
-            LOG((2, "count[%d]  %d", d, count[d]));
-            LOG((2, "fake_stride[%d]  %d", d, fake_stride[d]));
-        }
 
         if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
         {
@@ -744,12 +735,6 @@ int PIOc_get_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
             }
         }
 
-    }
-
-    LOG((2, "howdy ndims %d", ndims));
-    for (int d = 0; d < ndims; d++)
-    {
-        LOG((2, "fake_stride[%d]  %d", d, fake_stride[d]));
     }
 
     /* Free malloced resources. */
