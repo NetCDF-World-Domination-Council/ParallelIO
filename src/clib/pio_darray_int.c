@@ -359,7 +359,9 @@ int write_darray_multi_par(file_desc_t *file, int nvars, int fndims, const int *
 {
     iosystem_desc_t *ios;  /* Pointer to io system information. */
     var_desc_t *vdesc;    /* Pointer to var info struct. */
+#ifdef _PNETCDF
     int dsize;             /* Data size (for one region). */
+#endif /* _PNETCDF */
     int ierr = PIO_NOERR;
 #if USE_VARD_WRITE
     PIO_Offset gdim0;  /* global size of first dimension if no unlimited dimension and ndims<fndims */
@@ -640,8 +642,9 @@ int write_darray_multi_par(file_desc_t *file, int nvars, int fndims, const int *
                         /* Write, in non-blocking fashion, a list of subarrays. */
                         LOG((3, "about to call ncmpi_iput_varn() varids[%d] = %d rrcnt = %d, llen = %d",
                              nv, varids[nv], rrcnt, llen));
-			for (int i=0; i< rrcnt; i++)
-			    LOG((3, "i %d start %ld count %ld start %ld count %ld\n",i,startlist[i][0], countlist[i][0],startlist[i][1], countlist[i][1]));
+			for (int i = 0; i < rrcnt; i++)
+			    LOG((3, "i %d start %ld count %ld start %ld count %ld\n", i,
+                                 startlist[i][0], countlist[i][0], startlist[i][1], countlist[i][1]));
 			ierr = ncmpi_iput_varn(file->fh, varids[nv], rrcnt, startlist, countlist,
                                                bufptr, llen, iodesc->mpitype, &vdesc->request[vdesc->nreqs]);
 
@@ -1150,11 +1153,13 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobu
         io_region *region;
         size_t start[fndims];
         size_t count[fndims];
-        size_t tmp_bufsize = 1;
         void *bufptr;
+#ifdef _PNETCDF
+        size_t tmp_bufsize;
         int rrlen = 0;
         PIO_Offset *startlist[iodesc->maxregions];
         PIO_Offset *countlist[iodesc->maxregions];
+#endif /* _PNETCDF */
 
         /* buffer is incremented by byte and loffset is in terms of
            the iodessc->mpitype so we need to multiply by the size of
@@ -1174,7 +1179,6 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobu
         /* For each regions, read the data. */
         for (int regioncnt = 0; regioncnt < iodesc->maxregions; regioncnt++)
         {
-            tmp_bufsize = 1;
             if (region == NULL || iodesc->llen == 0)
             {
                 /* No data for this region. */
@@ -1673,7 +1677,6 @@ int pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, int vid,
  */
 int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
 {
-    int mpierr;  /* Return code from MPI functions. */
     int ierr = PIO_NOERR;
 
 #ifdef _PNETCDF
@@ -1693,6 +1696,8 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
      * tasks. */
     if (!force && file->iosystem->ioproc)
     {
+        int mpierr;  /* Return code from MPI functions. */
+
         usage += addsize;
         if ((mpierr = MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_OFFSET,  MPI_MAX,
                                     file->iosystem->io_comm)))
